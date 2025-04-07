@@ -1,0 +1,17 @@
+{
+  "name": "@rick-29/chipa_license_validator-darwin-universal",
+  "version": "0.0.1",
+  "os": [
+    "darwin"
+  ],
+  "main": "chipa_license_validator.darwin-universal.node",
+  "files": [
+    "chipa_license_validator.darwin-universal.node"
+  ],
+  "description": "A simple rust based library to connect to the chipa-license-server and validate license ids",
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "repository": "https://github.com/Rick-29/chipa-license-validator"
+}

@@ -1,0 +1,42 @@
+[build-system]
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "chipa_license_validator"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    # "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
+]
+description = "A simple rust based library to connect to the chipa-license-server and validate license ids."
+readme = "README.md"
+dynamic = ["version"]
+license = { text = "GPL-3.0" }
+authors = [
+    { name = "Rick-29", email = "ayfmportner@gmail.com" }
+]
+keywords = ["ta"]
+
+[tool.maturin]
+features = ["pyo3/extension-module", "pyo3/generate-import-lib"]
+strip = true
+
+[project.urls]
+Documentation = "https://github.com/Rick-29/chipa-license-validator"
+Homepage = "https://github.com/Rick-29/chipa-license-validator"
+Repository = "https://github.com/Rick-29/chipa-license-validator"
