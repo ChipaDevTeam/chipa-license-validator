@@ -2,7 +2,7 @@ mod client;
 mod encryption;
 
 #[cfg(not(any(feature = "js", feature = "py")))]
-pub use client::{TClient as LicenseClient, TError as Error, SecureResponse as Response};
+pub use client::{SecureResponse as Response, TClient as LicenseClient, TError as Error};
 #[cfg(not(any(feature = "js", feature = "py")))]
 pub use encryption::{ChipaError, ChipaFile};
 
@@ -307,6 +307,5 @@ pub mod py {
         Ok(())
     }
 
-    define_stub_info_gatherer!(stub_info);    // Register the custom exception
+    define_stub_info_gatherer!(stub_info); // Register the custom exception
 }
-

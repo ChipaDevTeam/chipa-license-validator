@@ -135,8 +135,6 @@ impl TClient {
             Err(TError::from(body))
         }
     }
-
-
 }
 
 impl SecureResponse {
