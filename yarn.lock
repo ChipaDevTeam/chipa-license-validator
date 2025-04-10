@@ -67,6 +67,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rick-29/chipa_license_validator@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@rick-29/chipa_license_validator@workspace:."
+  dependencies:
+    "@napi-rs/cli": "npm:^2.18.4"
+    ava: "npm:^6.0.1"
+  languageName: unknown
+  linkType: soft
+
 "@rollup/pluginutils@npm:^5.1.3":
   version: 5.1.4
   resolution: "@rollup/pluginutils@npm:5.1.4"
@@ -346,15 +355,6 @@ __metadata:
   checksum: 10c0/b23e88132c702f4855ca6d25cb5538b1114343e41472d5263ee8a37cccfccd9c4216d111e1097c6a27830407a1dc81fecdf2a56f2c63033d4dbbd88c10b0dcef
   languageName: node
   linkType: hard
-
-"chipa-license-validator@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "chipa-license-validator@workspace:."
-  dependencies:
-    "@napi-rs/cli": "npm:^2.18.4"
-    ava: "npm:^6.0.1"
-  languageName: unknown
-  linkType: soft
 
 "chownr@npm:^3.0.0":
   version: 3.0.0

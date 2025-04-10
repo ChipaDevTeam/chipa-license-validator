@@ -14,7 +14,7 @@ use uuid::Uuid;
 const VERSION: Version = Version::V1;
 
 #[derive(thiserror::Error, Debug)]
-pub(crate) enum TError {
+pub enum TError {
     #[error("Anyhow error: {0}")]
     Anyhow(#[from] anyhow::Error),
     #[error("Parsing error: {0}")]
@@ -40,9 +40,9 @@ impl fmt::Display for ApiError {
 
 impl std::error::Error for ApiError {}
 
-pub(crate) type SecureResult<T> = Result<T, TError>;
+pub type SecureResult<T> = Result<T, TError>;
 #[derive(Clone)]
-pub(crate) struct SecureResponse {
+pub struct SecureResponse {
     pub status: StatusCode,
     body: Option<String>,
 }
@@ -55,7 +55,7 @@ pub(crate) struct ValidateResponse {
 }
 
 #[derive(Clone)]
-pub(crate) struct TClient {
+pub struct TClient {
     inner: Client,
     base_url: String,
 }
@@ -135,6 +135,8 @@ impl TClient {
             Err(TError::from(body))
         }
     }
+
+
 }
 
 impl SecureResponse {
