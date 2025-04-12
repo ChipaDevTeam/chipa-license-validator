@@ -1,6 +1,5 @@
 use std::{fs::OpenOptions, io::Write, path::PathBuf};
 
-use bincode::{config, Decode};
 use bytes::Bytes;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tenacity_utils::security::{middleware::traits::VersionTrait, TenacityMiddleware, Version};
@@ -45,7 +44,7 @@ impl ChipaFile {
     }
 
     pub fn new<T: Serialize>(version: Version, body: &T) -> ChipaResult<Self> {
-        let body = bincode::serde::encode_to_vec(body, config::standard())
+        let body = rmp_serde::to_vec(body)
             .map_err(|e| ChipaError::Encode(e.to_string()))?;
         Ok(Self {
             version,
@@ -65,13 +64,12 @@ impl ChipaFile {
                 path.set_extension("chipa");
             }
         }
-        let start = bincode::serde::encode_to_vec(u16::from(self.version), config::standard())
-            .map_err(|e| ChipaError::Encode(e.to_string()))?;
+        let start = u16::from(self.version).to_be_bytes();
         let file = ChipaFile {
             version: self.version,
             body: self.encrypt_body(key)?,
         };
-        let data = bincode::serde::encode_to_vec(file, config::standard())
+        let data = rmp_serde::encode::to_vec(&file)
             .map_err(|e| ChipaError::Encode(e.to_string()))?;
         let data_encrypted = self
             .version
@@ -112,15 +110,13 @@ impl ChipaFile {
                 "File is too small".to_string(),
             ));
         }
-        let (version, b): (u16, usize) =
-            bincode::serde::decode_from_slice(&file[..2], config::standard())
-                .map_err(|e| ChipaError::Decode(e.to_string()))?;
+        let version: u16 = file[0] as u16 * 256  + file[1] as u16;
         let version = Version::try_from(version).map_err(ChipaError::Decryption)?;
         let slice = version
-            .base_decrypt_bytes(&file[b..])
+            .base_decrypt_bytes(&file[2..])
             .map_err(ChipaError::Decryption)?;
-        let (chipa_file, _): (ChipaFile, _) =
-            bincode::serde::decode_from_slice(slice.as_ref(), config::standard())
+        let chipa_file: ChipaFile =
+            rmp_serde::from_slice(slice.as_ref())
                 .map_err(|e| ChipaError::Decode(e.to_string()))?;
         let chipa_file = ChipaFile {
             version: chipa_file.version,
@@ -130,19 +126,13 @@ impl ChipaFile {
     }
 
     pub fn read<T: DeserializeOwned>(&self) -> ChipaResult<T> {
-        let (data, _) = bincode::serde::decode_from_slice(self.body.as_ref(), config::standard())
-            .map_err(|e| ChipaError::Decode(e.to_string()))?;
-        Ok(data)
-    }
-
-    pub fn read_decode<T: Decode>(&self) -> ChipaResult<T> {
-        let (data, _) = bincode::decode_from_slice(self.body.as_ref(), config::standard())
+        let data= rmp_serde::from_slice(self.body.as_ref())
             .map_err(|e| ChipaError::Decode(e.to_string()))?;
         Ok(data)
     }
 
     pub fn write<T: Serialize>(&mut self, data: &T) -> ChipaResult<()> {
-        let data = bincode::serde::encode_to_vec(data, config::standard())
+        let data = rmp_serde::to_vec(data)
             .map_err(|e| ChipaError::Encode(e.to_string()))?;
         self.body = Bytes::from(data);
         Ok(())
@@ -153,8 +143,19 @@ impl ChipaFile {
 mod tests {
     // use bincode::config::{Config, Configuration};
 
-    use bincode::{Decode, Encode};
     use serde_json::{json, Value};
+    use serde::{Deserialize, Serialize};
+    use std::{
+        collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque},
+        net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, SocketAddrV4, SocketAddrV6},
+        num::{
+            NonZeroI128, NonZeroI16, NonZeroI32, NonZeroI64, NonZeroI8, NonZeroU128, NonZeroU16,
+            NonZeroU32, NonZeroU64, NonZeroU8,
+        },
+        path::PathBuf,
+        time::Duration,
+    };
+    use uuid::Uuid;
 
     use super::*;
 
@@ -188,11 +189,7 @@ mod tests {
         // std::fs::remove_file(file_path)?;
     }
 
-    #[derive(Decode, Encode, Serialize, Deserialize)]
-    pub struct StructWithSerde {
-        #[bincode(with_serde)]
-        pub serde: Value,
-    }
+
     fn complex() -> Value {
         json!({
             "company": {
@@ -331,15 +328,15 @@ mod tests {
         let key = "test_key_123";
 
         // Create and save complex JSON
-        let complex_data = StructWithSerde{serde: complex()};
-        let chipa_file = ChipaFile::new(Version::V1, &complex_data).unwrap();
+        let chipa_file = ChipaFile::new(Version::V1, &complex()).unwrap();
         chipa_file.save(file_path, key).unwrap();
-
         // Load and verify
-        let loaded_file = ChipaFile::load(file_path, key).unwrap();
-        let loaded_data: StructWithSerde = loaded_file.read_decode().unwrap();
-        let loaded_data = loaded_data.serde;
+        let loaded_file = ChipaFile::load(file_path, "test_key_123").unwrap();
+        let loaded_data: Value = loaded_file.read().unwrap();
         // Verify specific nested values
+        dbg!(complex().to_string().len());
+        dbg!(std::fs::read(file_path).unwrap().len());
+
         assert_eq!(loaded_data["company"]["name"], "TechCorp Industries");
         assert_eq!(loaded_data["employees"][0]["name"], "John Doe");
         assert_eq!(loaded_data["metrics"]["revenue"]["2023"], 3100000.00);
@@ -373,4 +370,144 @@ mod tests {
         // let _ = std::fs::remove_file(file_path);
     }
 
+    const TEST_FILE_PATH: &str = "test_data.chipa";
+    const TEST_KEY: &str = "test_encryption_key";
+
+    fn cleanup_file() {
+        let _ = std::fs::remove_file(TEST_FILE_PATH);
+    }
+
+    // Helper function to perform the save and load test
+    fn test_serde_roundtrip<T>(data: &T)
+    where
+        T: Serialize + DeserializeOwned + PartialEq + std::fmt::Debug + 'static,
+    {
+        cleanup_file();
+
+        let chipa_file = ChipaFile::new(Version::V1, data).unwrap();
+        chipa_file.save(TEST_FILE_PATH, TEST_KEY).unwrap();
+
+        let loaded_file = ChipaFile::load(TEST_FILE_PATH, TEST_KEY).unwrap();
+        let loaded_data: T = loaded_file.read().unwrap();
+
+        assert_eq!(data, &loaded_data);
+
+        cleanup_file();
+    }
+
+    #[test]
+    fn test_primitive_types() {
+        test_serde_roundtrip(&true);
+        test_serde_roundtrip(&false);
+        test_serde_roundtrip(&123i8);
+        test_serde_roundtrip(&-123i8);
+        test_serde_roundtrip(&123u8);
+        test_serde_roundtrip(&123i16);
+        test_serde_roundtrip(&-123i16);
+        test_serde_roundtrip(&123u16);
+        test_serde_roundtrip(&123i32);
+        test_serde_roundtrip(&-123i32);
+        test_serde_roundtrip(&123u32);
+        test_serde_roundtrip(&123i64);
+        test_serde_roundtrip(&-123i64);
+        test_serde_roundtrip(&123u64);
+        test_serde_roundtrip(&123i128);
+        test_serde_roundtrip(&-123i128);
+        test_serde_roundtrip(&123u128);
+        test_serde_roundtrip(&123.456f32);
+        test_serde_roundtrip(&123.456f64);
+        test_serde_roundtrip(&'a');
+        test_serde_roundtrip(&"hello".to_string());
+    }
+
+    #[test]
+    fn test_compound_types() {
+        test_serde_roundtrip(&[1, 2, 3]);
+        test_serde_roundtrip(&vec![1, 2, 3]);
+        test_serde_roundtrip(&("hello".to_string(), 123));
+        test_serde_roundtrip(&Some("world".to_string()));
+        test_serde_roundtrip(&None::<String>);
+        let mut map = HashMap::new();
+        map.insert("key1".to_string(), 1);
+        map.insert("key2".to_string(), 2);
+        test_serde_roundtrip(&map);
+        let mut set = HashSet::new();
+        set.insert(1);
+        set.insert(2);
+        test_serde_roundtrip(&set);
+        test_serde_roundtrip(&BTreeMap::from([("a".to_string(), 1), ("b".to_string(), 2)]));
+        test_serde_roundtrip(&BTreeSet::from([1, 2, 3]));
+        test_serde_roundtrip(&LinkedList::from([1, 2, 3]));
+        test_serde_roundtrip(&VecDeque::from([1, 2, 3]));
+    }
+
+    #[test]
+    fn test_other_standard_types() {
+        test_serde_roundtrip(&Bytes::from_static(b"some bytes"));
+        test_serde_roundtrip(&PathBuf::from("a/b/c"));
+        test_serde_roundtrip(&Duration::from_secs(60));
+        // Cannot directly test Instant or SystemTime due to their nature
+        test_serde_roundtrip(&Uuid::new_v4());
+        test_serde_roundtrip(&IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+        test_serde_roundtrip(&IpAddr::V6(Ipv6Addr::new(
+            0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x2ff,
+        )));
+        test_serde_roundtrip(&SocketAddr::V4(SocketAddrV4::new(
+            Ipv4Addr::new(127, 0, 0, 1),
+            8080,
+        )));
+        test_serde_roundtrip(&SocketAddr::V6(SocketAddrV6::new(
+            Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x2ff),
+            8081,
+            0,
+            0,
+        )));
+    }
+
+    #[test]
+    fn test_non_zero_types() {
+        test_serde_roundtrip(&NonZeroI8::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroU8::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroI16::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroU16::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroI32::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroU32::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroI64::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroU64::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroI128::new(1).unwrap());
+        test_serde_roundtrip(&NonZeroU128::new(1).unwrap());
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    struct CustomStruct {
+        name: String,
+        age: u32,
+        data: Vec<i32>,
+    }
+
+    #[test]
+    fn test_custom_struct() {
+        let custom_data = CustomStruct {
+            name: "Test Struct".to_string(),
+            age: 30,
+            data: vec![10, 20, 30],
+        };
+        test_serde_roundtrip(&custom_data);
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    enum CustomEnum {
+        A,
+        B(i32),
+        C { value: String },
+    }
+
+    #[test]
+    fn test_custom_enum() {
+        test_serde_roundtrip(&CustomEnum::A);
+        test_serde_roundtrip(&CustomEnum::B(42));
+        test_serde_roundtrip(&CustomEnum::C {
+            value: "hello".to_string(),
+        });
+    }
 }
