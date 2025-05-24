@@ -117,6 +117,8 @@ pub mod py {
         create_exception, define_stub_info_gatherer,
         derive::{gen_stub_pyclass, gen_stub_pymethods},
     };
+    // use pythonize::pythonize;
+    // use serde_json::Value;
     use uuid::Uuid;
 
     pub struct ValidationError {
@@ -135,31 +137,31 @@ pub mod py {
         }
     }
 
-    /// Exception raised when license validation fails.
-    ///
-    /// This exception is raised when there are issues validating a license, which can
-    /// include:
-    ///
-    /// - Invalid license UUID format
-    /// - Network connectivity issues
-    /// - Server-side validation failures
-    /// - Expired licenses
-    /// - Unauthorized applications
-    ///
-    /// # Example
-    /// ```python
-    /// from chipa_license_validator import LicenseClient, LicenseValidationError
-    ///
-    /// try:
-    ///     client = LicenseClient("https://license.example.com")
-    ///     token = await client.validate_license(
-    ///         "550e8400-e29b-41d4-a716-446655440000",
-    ///         "my-app"
-    ///     )
-    /// except LicenseValidationError as e:
-    ///     print(f"Validation failed: {str(e)}")
-    ///     # Handle specific validation errors
-    /// ```
+    // / Exception raised when license validation fails.
+    // /
+    // / This exception is raised when there are issues validating a license, which can
+    // / include:
+    // /
+    // / - Invalid license UUID format
+    // / - Network connectivity issues
+    // / - Server-side validation failures
+    // / - Expired licenses
+    // / - Unauthorized applications
+    // /
+    // / # Example
+    // / ```python
+    // / from chipa_license_validator import LicenseClient, LicenseValidationError
+    // /
+    // / try:
+    // /     client = LicenseClient("https://license.example.com")
+    // /     token = await client.validate_license(
+    // /         "550e8400-e29b-41d4-a716-446655440000",
+    // /         "my-app"
+    // /     )
+    // / except LicenseValidationError as e:
+    // /     print(f"Validation failed: {str(e)}")
+    // /     # Handle specific validation errors
+    // / ```
     create_exception!(chipa_license_validator, LicenseValidationError, PyException);
 
     /// A client for validating licenses against the Chipa License Server.
@@ -195,6 +197,7 @@ pub mod py {
     #[gen_stub_pyclass]
     pub struct LicenseClient {
         client: TClient,
+        application: String,
     }
 
     #[gen_stub_pymethods]
@@ -216,9 +219,10 @@ pub mod py {
         ///     client = LicenseClient("https://license.example.com")
         ///     ```
         #[new]
-        pub fn new(base_url: String) -> Self {
+        pub fn new(base_url: String, application: String) -> Self {
             Self {
                 client: TClient::new(base_url),
+                application,
             }
         }
 
@@ -240,6 +244,7 @@ pub mod py {
         pub fn set_url(&self, url: String) -> Self {
             Self {
                 client: self.client.clone().set_url(url),
+                application: self.application.clone(),
             }
         }
 
@@ -278,22 +283,44 @@ pub mod py {
             &self,
             py: Python<'py>,
             license: String,
-            application: String,
         ) -> PyResult<Bound<'py, PyAny>> {
             let client = self.client.clone();
-
+            let app = self.application.clone();
             pyo3_async_runtimes::tokio::future_into_py(py, async move {
                 Ok(client
                     .validate_license(
                         Uuid::parse_str(&license)
                             .map_err(TError::from)
                             .map_err(|e| ValidationError::new(e.to_string()))?,
-                        application,
+                        app,
                     )
                     .await
                     .map_err(|e| ValidationError::new(e.to_string()))?)
             })
         }
+
+        // pub fn load<'py>(&self, py: Python<'py>, path: String, license: String) -> PyResult<Bound<'static, PyAny>> {
+        //     let client = self.client.clone();
+        //     let app = self.application.clone();
+        //     pyo3_async_runtimes::tokio::future_into_py(py, async move {
+        //         let license = client.validate_license(Uuid::parse_str(&license)
+        //         .map_err(TError::from)
+        //         .map_err(|e| ValidationError::new(e.to_string()))?, app)
+        //         .await
+        //         .map_err(|e| ValidationError::new(e.to_string()))?;
+        //         Python::with_gil(|py: Python<'static>| {
+        //         let file = ChipaFile::load(&path, &license)
+        //             .map_err(TError::from)
+        //             .map_err(|e| ValidationError::new(e.to_string()))?;
+        //             let data: Value = file.read()
+        //                 .map_err(TError::from)
+        //                 .map_err(|e| ValidationError::new(e.to_string()))?;
+
+        //             pythonize(py, &data).map_err(move |e| PyErr::from(e))
+                    
+        //         })
+        //     })
+        // }
     }
     #[pymodule]
     #[pyo3(name = "chipa_license_validator")]
@@ -309,3 +336,4 @@ pub mod py {
 
     define_stub_info_gatherer!(stub_info); // Register the custom exception
 }
+

@@ -12,6 +12,7 @@ path = "src/stubgen.rs"
 
 
 [features]
+default = ["py"]
 js = ["dep:napi", "dep:napi-derive"]
 py = ["dep:pyo3", "dep:pyo3-async-runtimes", "dep:pyo3-stub-gen"]
 
@@ -33,6 +34,7 @@ bincode = "=2.0.0-rc.3"
 bytes = { version = "1.10.1", features = ["serde"] }
 rmpv = { version = "1.3.0", features = ["with-serde"] }
 rmp-serde = "1.3.0"
+pythonize = "0.24.0"
 
 [build-dependencies]
 napi-build = "2.0.1"

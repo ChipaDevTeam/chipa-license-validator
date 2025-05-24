@@ -25,6 +25,8 @@ pub enum TError {
     Response(#[from] ApiError),
     #[error("UUID Parsing error: {0}")]
     UuidParsing(#[from] uuid::Error),
+    #[error("Chipa File error, {0}")]
+    ChipaFile(#[from] crate::encryption::ChipaError),
 }
 
 #[derive(Deserialize, Debug)]

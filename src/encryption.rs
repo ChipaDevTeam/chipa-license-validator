@@ -370,7 +370,13 @@ mod tests {
         // let _ = std::fs::remove_file(file_path);
     }
 
-    const TEST_FILE_PATH: &str = "test_data.chipa";
+    const TEST_FILE_PATH: &str = "chipa/test_data.chipa";
+    const TEST_PRIMITIVE_PATH: &str = "chipa/test_primitive.chipa";
+    const TEST_COMPOUND_PATH: &str = "chipa/test_compound_types.chipa";
+    const TEST_STANDARD_PATH: &str = "chipa/test_standard_types.chipa";
+    const TEST_NON_ZERO_PATH: &str = "chipa/test_non_zero_types.chipa";
+    const TEST_STRUCT_PATH: &str = "chipa/test_struct.chipa";
+    const TEST_ENUM_PATH: &str = "chipa/test_enum.chipa";
     const TEST_KEY: &str = "test_encryption_key";
 
     fn cleanup_file() {
@@ -378,16 +384,16 @@ mod tests {
     }
 
     // Helper function to perform the save and load test
-    fn test_serde_roundtrip<T>(data: &T)
+    fn test_serde_roundtrip<T>(path: &str, data: &T)
     where
         T: Serialize + DeserializeOwned + PartialEq + std::fmt::Debug + 'static,
     {
         cleanup_file();
 
         let chipa_file = ChipaFile::new(Version::V1, data).unwrap();
-        chipa_file.save(TEST_FILE_PATH, TEST_KEY).unwrap();
+        chipa_file.save(path, TEST_KEY).unwrap();
 
-        let loaded_file = ChipaFile::load(TEST_FILE_PATH, TEST_KEY).unwrap();
+        let loaded_file = ChipaFile::load(path, TEST_KEY).unwrap();
         let loaded_data: T = loaded_file.read().unwrap();
 
         assert_eq!(data, &loaded_data);
@@ -397,66 +403,66 @@ mod tests {
 
     #[test]
     fn test_primitive_types() {
-        test_serde_roundtrip(&true);
-        test_serde_roundtrip(&false);
-        test_serde_roundtrip(&123i8);
-        test_serde_roundtrip(&-123i8);
-        test_serde_roundtrip(&123u8);
-        test_serde_roundtrip(&123i16);
-        test_serde_roundtrip(&-123i16);
-        test_serde_roundtrip(&123u16);
-        test_serde_roundtrip(&123i32);
-        test_serde_roundtrip(&-123i32);
-        test_serde_roundtrip(&123u32);
-        test_serde_roundtrip(&123i64);
-        test_serde_roundtrip(&-123i64);
-        test_serde_roundtrip(&123u64);
-        test_serde_roundtrip(&123i128);
-        test_serde_roundtrip(&-123i128);
-        test_serde_roundtrip(&123u128);
-        test_serde_roundtrip(&123.456f32);
-        test_serde_roundtrip(&123.456f64);
-        test_serde_roundtrip(&'a');
-        test_serde_roundtrip(&"hello".to_string());
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &true);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &false);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123i8);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &-123i8);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123u8);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123i16);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &-123i16);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123u16);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123i32);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &-123i32);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123u32);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123i64);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &-123i64);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123u64);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123i128);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &-123i128);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123u128);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123.456f32);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &123.456f64);
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &'a');
+        test_serde_roundtrip(TEST_PRIMITIVE_PATH, &"hello".to_string());
     }
 
     #[test]
     fn test_compound_types() {
-        test_serde_roundtrip(&[1, 2, 3]);
-        test_serde_roundtrip(&vec![1, 2, 3]);
-        test_serde_roundtrip(&("hello".to_string(), 123));
-        test_serde_roundtrip(&Some("world".to_string()));
-        test_serde_roundtrip(&None::<String>);
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &[1, 2, 3]);
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &vec![1, 2, 3]);
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &("hello".to_string(), 123));
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &Some("world".to_string()));
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &None::<String>);
         let mut map = HashMap::new();
         map.insert("key1".to_string(), 1);
         map.insert("key2".to_string(), 2);
-        test_serde_roundtrip(&map);
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &map);
         let mut set = HashSet::new();
         set.insert(1);
         set.insert(2);
-        test_serde_roundtrip(&set);
-        test_serde_roundtrip(&BTreeMap::from([("a".to_string(), 1), ("b".to_string(), 2)]));
-        test_serde_roundtrip(&BTreeSet::from([1, 2, 3]));
-        test_serde_roundtrip(&LinkedList::from([1, 2, 3]));
-        test_serde_roundtrip(&VecDeque::from([1, 2, 3]));
-    }
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &set);
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &BTreeMap::from([("a".to_string(), 1), ("b".to_string(), 2)]));
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &BTreeSet::from([1, 2, 3]));
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &LinkedList::from([1, 2, 3]));
+        test_serde_roundtrip(TEST_COMPOUND_PATH, &VecDeque::from([1, 2, 3]));
+    } 
 
     #[test]
     fn test_other_standard_types() {
-        test_serde_roundtrip(&Bytes::from_static(b"some bytes"));
-        test_serde_roundtrip(&PathBuf::from("a/b/c"));
-        test_serde_roundtrip(&Duration::from_secs(60));
+        test_serde_roundtrip(TEST_STANDARD_PATH, &Bytes::from_static(b"some bytes"));
+        test_serde_roundtrip(TEST_STANDARD_PATH, &PathBuf::from("a/b/c"));
+        test_serde_roundtrip(TEST_STANDARD_PATH, &Duration::from_secs(60));
         // Cannot directly test Instant or SystemTime due to their nature
-        test_serde_roundtrip(&Uuid::new_v4());
-        test_serde_roundtrip(&IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
-        test_serde_roundtrip(&IpAddr::V6(Ipv6Addr::new(
+        test_serde_roundtrip(TEST_STANDARD_PATH, &Uuid::new_v4());
+        test_serde_roundtrip(TEST_STANDARD_PATH, &IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)));
+        test_serde_roundtrip(TEST_STANDARD_PATH, &IpAddr::V6(Ipv6Addr::new(
             0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x2ff,
         )));
-        test_serde_roundtrip(&SocketAddr::V4(SocketAddrV4::new(
+        test_serde_roundtrip(TEST_STANDARD_PATH, &SocketAddr::V4(SocketAddrV4::new(
             Ipv4Addr::new(127, 0, 0, 1),
             8080,
         )));
-        test_serde_roundtrip(&SocketAddr::V6(SocketAddrV6::new(
+        test_serde_roundtrip(TEST_STANDARD_PATH, &SocketAddr::V6(SocketAddrV6::new(
             Ipv6Addr::new(0, 0, 0, 0, 0, 0xffff, 0xc00a, 0x2ff),
             8081,
             0,
@@ -466,16 +472,16 @@ mod tests {
 
     #[test]
     fn test_non_zero_types() {
-        test_serde_roundtrip(&NonZeroI8::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroU8::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroI16::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroU16::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroI32::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroU32::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroI64::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroU64::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroI128::new(1).unwrap());
-        test_serde_roundtrip(&NonZeroU128::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroI8::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroU8::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroI16::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroU16::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroI32::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroU32::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroI64::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroU64::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroI128::new(1).unwrap());
+        test_serde_roundtrip(TEST_NON_ZERO_PATH, &NonZeroU128::new(1).unwrap());
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -492,7 +498,7 @@ mod tests {
             age: 30,
             data: vec![10, 20, 30],
         };
-        test_serde_roundtrip(&custom_data);
+        test_serde_roundtrip(TEST_STRUCT_PATH, &custom_data);
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -504,9 +510,9 @@ mod tests {
 
     #[test]
     fn test_custom_enum() {
-        test_serde_roundtrip(&CustomEnum::A);
-        test_serde_roundtrip(&CustomEnum::B(42));
-        test_serde_roundtrip(&CustomEnum::C {
+        test_serde_roundtrip(TEST_ENUM_PATH, &CustomEnum::A);
+        test_serde_roundtrip(TEST_ENUM_PATH, &CustomEnum::B(42));
+        test_serde_roundtrip(TEST_ENUM_PATH, &CustomEnum::C {
             value: "hello".to_string(),
         });
     }
