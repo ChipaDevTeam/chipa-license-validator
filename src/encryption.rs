@@ -74,7 +74,7 @@ impl ChipaFile {
         let data_encrypted = self
             .version
             .base_encrypt_bytes(&data)
-            .map_err(ChipaError::Encryption)?;
+            .map_err(|e| ChipaError::Encryption(anyhow::Error::from(e)))?;
         let mut file = OpenOptions::new()
             .create(true)
             .write(true)
@@ -111,10 +111,10 @@ impl ChipaFile {
             ));
         }
         let version: u16 = file[0] as u16 * 256  + file[1] as u16;
-        let version = Version::try_from(version).map_err(ChipaError::Decryption)?;
+        let version = Version::try_from(version).map_err(|e| ChipaError::Decryption(anyhow::Error::from(e)))?;
         let slice = version
             .base_decrypt_bytes(&file[2..])
-            .map_err(ChipaError::Decryption)?;
+            .map_err(|e| ChipaError::Decryption(anyhow::Error::from(e)))?;
         let chipa_file: ChipaFile =
             rmp_serde::from_slice(slice.as_ref())
                 .map_err(|e| ChipaError::Decode(e.to_string()))?;
