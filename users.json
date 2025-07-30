@@ -1,0 +1,16 @@
+{
+  "8027704239": {
+    "username": "ChipaDevTeam",
+    "license_key": "E6AE0689-F0EA-5B99-A7D0-0959C7ABFE1A",
+    "registered_at": "2025-07-30T11:05:54.466853",
+    "is_active": true,
+    "settings": {
+      "candle_count": 5,
+      "cci_threshold": 100
+    },
+    "stats": {
+      "signals_received": 0,
+      "last_activity": "2025-07-30T11:05:54.466870"
+    }
+  }
+}
